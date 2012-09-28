@@ -100,8 +100,7 @@ func lexEntry(l *lexer) stateFn {
 			l.emit(tokenLeftBrace)
 			return lexEntryBody
 		default:
-			log.Println("No match:", string(r), isAlphaNumeric(r))
-			return l.errorf("Unexpected input: %s\n", r)
+			return l.errorf("Unexpected input in entry: %s\n", r)
 		}
 	}
 	return nil
@@ -171,17 +170,9 @@ func lexEntryBody(l *lexer) stateFn {
 			l.ignore()
 			return lexString
 		default:
-			log.Println("E unmatch:", string(r))
+			return l.errorf("Unexpected input in entry body: %s\n", r)
 		}
 
 	}
 	return nil
 }
-
-/*
-func FindBibTeXEntries(s string) []BibTeXEntry {
-	results := make([]BibTeXEntry, 0)
-
-	return results
-}
-*/
