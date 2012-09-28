@@ -21,14 +21,18 @@ var exampleBibTeXDocument = `@Book{hicks2001,
 }`
 
 func TestBibTeXLexing(t *testing.T) {
-	_, ls := lexBibTeX(simpleBibTeXDocument)
-	var lastToken lexeme
-	for lexeme := range ls {
-		fmt.Println("Got lexeme!", lexeme)
-		lastToken = lexeme
+	l := lexBibTeX(simpleBibTeXDocument)
+	tokens := make([]lexeme, 0)
+	for token := l.nextToken(); ; token = l.nextToken() {
+            tokens = append(tokens, token)
+			fmt.Println(token)
+			if token.typ == tokenEOF || token.typ == tokenError {
+			 break
+			}
 	}
-	if lastToken.typ != tokenEOF {
-		t.Error("expected EOF:", lastToken)
+	fmt.Println(tokens)
+	if tokens[len(tokens)-1].typ != tokenEOF {
+		t.Error("expected EOF, got:", tokens[len(tokens)-1])
 	}
 
 }

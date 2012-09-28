@@ -62,7 +62,7 @@ func (l lexeme) String() string {
 	return fmt.Sprintf("%s %q", typeLabel, l.val)
 }
 
-func lexBibTeX(input string) (*lexer, chan lexeme) {
+func lexBibTeX(input string) *lexer {
 	return lex(input, lexTopLevel)
 }
 
