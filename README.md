@@ -3,6 +3,6 @@ bibtex
 
 BibTeX library for Go
 
-status: alpha
+status: pre-alpha
 
 License: MIT
