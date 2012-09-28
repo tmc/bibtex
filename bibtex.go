@@ -2,6 +2,7 @@ package bibtex
 
 import (
 	"fmt"
+	"log"
 )
 
 type BibTeXEntry struct {
@@ -69,7 +70,6 @@ func lexBibTeX(input string) (*lexer, chan lexeme) {
 // lexing state functions follow
 
 func lexTopLevel(l *lexer) stateFn {
-	fmt.Println(" -> TopLevel")
 	for {
 		r := l.next()
 		if r == litEntryStart {
@@ -79,18 +79,17 @@ func lexTopLevel(l *lexer) stateFn {
 		if r == eof {
 			break
 		}
-		fmt.Println("tl nomatch", string(r))
+		log.Println("tl nomatch", string(r))
 	}
 	l.emit(tokenEOF)
 	return nil
 }
 
 func lexEntry(l *lexer) stateFn {
-	fmt.Println(" -> Entry")
 	for {
 		switch r := l.next(); {
 		case r == eof:
-			fmt.Println("eof", r)
+			log.Println("eof", r)
 			return l.errorf("unclosed entry")
 		case isWhitespace(r):
 			l.ignore()
@@ -101,7 +100,7 @@ func lexEntry(l *lexer) stateFn {
 			l.emit(tokenLeftBrace)
 			return lexEntryBody
 		default:
-			fmt.Println("No match:", string(r), isAlphaNumeric(r))
+			log.Println("No match:", string(r), isAlphaNumeric(r))
 			return l.errorf("Unexpected input: %s\n", r)
 		}
 	}
@@ -109,7 +108,6 @@ func lexEntry(l *lexer) stateFn {
 }
 
 func lexEntryType(l *lexer) stateFn {
-	fmt.Println(" -> Entry Type")
 	for {
 		switch r := l.next(); {
 		case isWhitespace(r):
@@ -126,11 +124,8 @@ func lexEntryType(l *lexer) stateFn {
 }
 
 func lexIdentifier(l *lexer) stateFn {
-	fmt.Println(" -> Identifier")
 	for {
 		switch r := l.next(); {
-		case isWhitespace(r):
-			l.ignore()
 		case isAlphaNumeric(r):
 			// consume
 		default:
@@ -143,14 +138,12 @@ func lexIdentifier(l *lexer) stateFn {
 }
 
 func lexString(l *lexer) stateFn {
-	fmt.Println(" -> String")
 	for {
 		switch r := l.next(); {
 		case r == litQuote:
 			l.backup()
 			l.emit(tokenString)
-			l.accept(" ")
-			l.ignore()
+			l.next()
 			return lexEntryBody
 		case r == eof:
 			return l.errorf("Unexpected EOF")
@@ -160,7 +153,6 @@ func lexString(l *lexer) stateFn {
 }
 
 func lexEntryBody(l *lexer) stateFn {
-	fmt.Println(" -> Entry Body")
 	for {
 		switch r := l.next(); {
 		case isWhitespace(r):
@@ -179,7 +171,7 @@ func lexEntryBody(l *lexer) stateFn {
 			l.ignore()
 			return lexString
 		default:
-			fmt.Println("E unmatch:", string(r))
+			log.Println("E unmatch:", string(r))
 		}
 
 	}

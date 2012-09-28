@@ -22,13 +22,13 @@ var exampleBibTeXDocument = `@Book{hicks2001,
 
 func TestBibTeXLexing(t *testing.T) {
 	_, ls := lexBibTeX(simpleBibTeXDocument)
-	var lastToken lexeme
+	tokens := make([]lexeme, 0)
 	for lexeme := range ls {
-		fmt.Println("Got lexeme!", lexeme)
-		lastToken = lexeme
+		tokens = append(tokens, lexeme)
 	}
-	if lastToken.typ != tokenEOF {
-		t.Error("expected EOF:", lastToken)
+	expected := `[entryStart "@" identifier "Book" { identifier "b_id" , identifier "title" = string "Wonderful story" ", } EOF]`
+	actual := fmt.Sprint(tokens)
+	if actual != expected {
+		t.Errorf("'%s' !+ '%s'", actual, expected)
 	}
-
 }
