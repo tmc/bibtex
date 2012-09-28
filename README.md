@@ -1,7 +1,7 @@
 bibtex
 ======
 
-BibTeX library Go
+BibTeX library for Go
 
 status: alpha
 
