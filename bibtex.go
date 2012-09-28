@@ -22,10 +22,10 @@ const (
 var tokenTypeLabels = map[tokenType]string{
 	tokenEntryStart: "entryStart",
 	tokenIdentifier: "identifier",
-	tokenLeftBrace:  "{",
-	tokenRightBrace: "{",
-	tokenComma:      ",",
-	tokenEquals:     "=",
+	tokenLeftBrace:  "",
+	tokenRightBrace: "",
+	tokenComma:      "",
+	tokenEquals:     "",
 	tokenNumber:     "number",
 	tokenString:     "string",
 }
@@ -50,6 +50,12 @@ func (l lexeme) String() string {
 	if !ok {
 		typeLabel = "unknown_token"
 	}
+
+	// if no label print direct value
+	if typeLabel == "" {
+		return l.val
+	}
+
 	if len(l.val) > 30 {
 		return fmt.Sprintf("%s %.30q...", typeLabel, l.val)
 	}
@@ -128,7 +134,6 @@ func lexIdentifier(l *lexer) stateFn {
 		case isAlphaNumeric(r):
 			// consume
 		default:
-			fmt.Println("id, not ok:", string(r))
 			l.backup()
 			l.emit(tokenIdentifier)
 			return lexEntryBody
