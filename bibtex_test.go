@@ -26,7 +26,7 @@ func TestBibTeXLexing(t *testing.T) {
 	for lexeme := range ls {
 		tokens = append(tokens, lexeme)
 	}
-	expected := `[entryStart "@" identifier "Book" { identifier "b_id" , identifier "title" = string "Wonderful story" ", } EOF]`
+	expected := `[entryStart "@" identifier "Book" { identifier "b_id" , identifier "title" = string "Wonderful story" , } EOF]`
 	actual := fmt.Sprint(tokens)
 	if actual != expected {
 		t.Errorf("'%s' !+ '%s'", actual, expected)

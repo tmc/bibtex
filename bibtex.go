@@ -143,6 +143,7 @@ func lexString(l *lexer) stateFn {
 			l.backup()
 			l.emit(tokenString)
 			l.next()
+			l.ignore()
 			return lexEntryBody
 		case r == eof:
 			return l.errorf("Unexpected EOF")
