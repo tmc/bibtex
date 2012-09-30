@@ -100,7 +100,7 @@ func lexEntry(l *lexer) stateFn {
 			return lexEntryType
 		case r == litLeftBrace:
 			l.emit(tokenLeftBrace)
-			return lexEntryBody
+			return lexEntryIdentifier
 		default:
 			l.emit(tokenError)
 			return lexTopLevel
@@ -127,6 +127,23 @@ func lexEntryType(l *lexer) stateFn {
 	return nil
 }
 
+
+func lexEntryIdentifier(l *lexer) stateFn {
+	for {
+		switch r := l.next(); {
+		case r == eof:
+			return l.errorf("unclosed entry identifier")
+		case isIdentifierChar(r):
+			// consume
+		default:
+			l.backup()
+			l.emit(tokenIdentifier)
+			return lexEntryValueList
+		}
+	}
+	return nil
+}
+
 func lexIdentifier(l *lexer) stateFn {
 	allNumeric := true
 	for {
@@ -145,7 +162,7 @@ func lexIdentifier(l *lexer) stateFn {
 			} else {
 				l.emit(tokenIdentifier)
 			}
-			return lexEntryBody
+			return lexEntryValueList
 		}
 	}
 	return nil
@@ -161,7 +178,7 @@ func lexString(l *lexer) stateFn {
 			l.emit(tokenString)
 			l.next()
 			l.ignore()
-			return lexEntryBody
+			return lexEntryValueList
 		case r == eof:
 			l.backup()
 			return lexTopLevel
@@ -170,7 +187,7 @@ func lexString(l *lexer) stateFn {
 	return nil
 }
 
-func lexEntryBody(l *lexer) stateFn {
+func lexEntryValueList(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
 		case r == eof:
@@ -212,7 +229,7 @@ func lexBracedValue(l *lexer) stateFn {
 			l.emit(tokenString)
 			l.next()
 			l.ignore()
-			return lexEntryBody
+			return lexEntryValueList
 		}
 	}
 	return nil

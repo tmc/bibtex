@@ -64,9 +64,7 @@ func (p *parser) parse() (b BibTeXEntry, err error) {
 	}
 
 	b, err = p.entry_body(b)
-	if err != nil {
-		return b, err
-	}
+
 	return b, err
 }
 
