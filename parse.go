@@ -44,7 +44,7 @@ func parseBibTeXMultiple(in string) (results []BibTeXEntry) {
 		if err == nil {
 			results = append(results, entry)
 		} else {
-			if p.lastToken.typ == tokenEOF || p.lastToken.typ == tokenError {
+			if p.lastToken.typ == tokenEOF {
 				break
 			}
 		}
@@ -99,7 +99,7 @@ func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
 		}
 
 		if t.typ != tokenIdentifier {
-			err = errors.New(fmt.Sprintf("error: unexpected token: %s (expected %s)", p.lastToken, tokenIdentifier))
+			err = errors.New(fmt.Sprintf("error: unexpected token: %s (expected identifier)", p.lastToken))
 			return r, err
 		}
 		key := p.lastToken.val
@@ -123,17 +123,13 @@ func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
 	return r, nil
 }
 
-func (p *parser) nextToken() (t lexeme) {
-	select {
-	case tok, ok := <-p.lexemes:
-		if ok {
-			t = tok
-		} else {
-			t = lexeme{tokenError, "Lexer done providing tokens"}
-		}
-		p.lastToken = t
+func (p *parser) nextToken() lexeme {
+	tok, ok := <-p.lexemes
+	if !ok {
+		tok = lexeme{tokenError, "Lexer done providing tokens"}
 	}
-	return
+	p.lastToken = tok
+	return tok
 }
 
 func (p *parser) accept(l tokenType) bool {

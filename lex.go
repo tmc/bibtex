@@ -2,6 +2,7 @@ package bibtex
 
 import (
 	"fmt"
+	"strings"
 )
 
 const (
@@ -18,10 +19,10 @@ const (
 var tokenTypeLabels = map[tokenType]string{
 	tokenEntryStart: "entryStart",
 	tokenIdentifier: "identifier",
-	tokenLeftBrace:  "",
-	tokenRightBrace: "",
-	tokenComma:      "",
-	tokenEquals:     "",
+	tokenLeftBrace:  "{",
+	tokenRightBrace: "}",
+	tokenComma:      ",",
+	tokenEquals:     "=",
 	tokenNumber:     "number",
 	tokenString:     "string",
 }
@@ -55,8 +56,8 @@ func (l lexeme) String() string {
 	typeLabel := l.typ.String()
 
 	// if no label print direct value
-	if typeLabel == "" {
-		return l.val
+	if typeLabel == l.val {
+		return typeLabel
 	}
 
 	if len(l.val) > 30 {

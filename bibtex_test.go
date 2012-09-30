@@ -84,20 +84,21 @@ func TestParsingMultiple(t *testing.T) {
 	almostMatch := "@fooo}=\n\t"
 
 	cases := map[string]int{
-		simpleBibTeXDocument:                                                                  1,
-		exampleBibTeXDocument:                                                                 1,
-		exampleBibTeXDocument + gibberish + simpleBibTeXDocument:                              2,
-		simpleBibTeXDocument + gibberish + simpleBibTeXDocument:                               2,
-		exampleBibTeXDocument + almostMatch:                                                   1,
-		almostMatch + simpleBibTeXDocument + gibberish:                                        1,
-		exampleBibTeXDocument + gibberish + almostMatch + exampleBibTeXDocument + almostMatch: 2,
+		simpleBibTeXDocument:                                     1,
+		exampleBibTeXDocument:                                    1,
+		exampleBibTeXDocument + gibberish + simpleBibTeXDocument: 2,
+		simpleBibTeXDocument + gibberish + simpleBibTeXDocument:  2,
+		exampleBibTeXDocument + almostMatch:                      1,
+		almostMatch + simpleBibTeXDocument + gibberish:           1,
+		exampleBibTeXDocument + gibberish + almostMatch +
+			exampleBibTeXDocument + almostMatch: 2,
 	}
 
 	for doc, expected := range cases {
 		entries := ParseBibTeXEntries(doc)
 		if len(entries) != expected {
 			for _, result := range entries {
-				fmt.Println(result.Entry.PrettyPrint())
+				fmt.Println(result.PrettyPrint())
 			}
 			t.Error("Expected", expected, "entries, got", len(entries))
 		}
