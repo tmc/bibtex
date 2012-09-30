@@ -39,14 +39,10 @@ func parseBibTeXMultiple(in string) (results []BibTeXEntry) {
 		lexemes: lexemes,
 	}
 
-	for {
+	for p.lastToken.typ != tokenEOF {
 		entry, err := p.parse()
 		if err == nil {
 			results = append(results, entry)
-		} else {
-			if p.lastToken.typ == tokenEOF {
-				break
-			}
 		}
 
 	}
@@ -87,22 +83,31 @@ func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
 	if err != nil {
 		return r, err
 	}
-
 	r.Identifier = p.lastToken.val
 
-	for p.lastToken.typ != tokenRightBrace && p.lastToken.typ != tokenEOF && p.lastToken.typ != tokenError {
-		p.accept(tokenComma)
+	return p.value_list(r)
+}
 
-		t := p.nextToken()
-		if t.typ == tokenRightBrace || t.typ == tokenEOF {
-			break
-		}
+func (p *parser) value_list(b BibTeXEntry) (r BibTeXEntry, err error) {
+	r = b
 
+	t := p.lastToken
+	if t.typ == tokenRightBrace {
+		return r, nil
+	}
+	if t.typ == tokenError || t.typ == tokenEOF {
+		return r, errors.New(fmt.Sprint(t))
+	}
+
+	ok := p.accept(tokenIdentifier)
+	if ok {
+		t := p.lastToken
 		if t.typ != tokenIdentifier {
 			err = errors.New(fmt.Sprintf("error: unexpected token: %s (expected identifier)", p.lastToken))
 			return r, err
 		}
-		key := p.lastToken.val
+		key := t.val
+
 		err = p.expect(tokenEquals)
 		if err != nil {
 			return r, err
@@ -117,23 +122,29 @@ func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
 		if err != nil {
 			return r, err
 		}
-		r.addAttribute(key, p.lastToken.Value())
+		if t.typ == tokenNumber {
+			r.addAttribute(key, p.lastToken.val, Numeric)
+		} else {
+			r.addAttribute(key, p.lastToken.val, String)
+		}
+
+		p.accept(tokenComma)
 	}
 
-	return r, nil
+	return p.value_list(r)
 }
 
 func (p *parser) nextToken() lexeme {
 	tok, ok := <-p.lexemes
 	if !ok {
-		tok = lexeme{tokenError, "Lexer done providing tokens"}
+		tok = lexeme{tokenEOF, "Lexer done providing tokens"}
 	}
 	p.lastToken = tok
 	return tok
 }
 
 func (p *parser) accept(l tokenType) bool {
-	if t := p.nextToken(); t.typ == l {
+	if p.nextToken().typ == l {
 		return true
 	}
 	return false

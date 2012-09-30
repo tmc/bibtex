@@ -66,16 +66,6 @@ func (l lexeme) String() string {
 	return fmt.Sprintf("%s %q", typeLabel, l.val)
 }
 
-func (l lexeme) Value() string {
-	switch l.typ {
-	case tokenString:
-		return fmt.Sprintf("\"%s\"", l.val)
-	default:
-		return fmt.Sprint(l.val)
-	}
-	return "(unknown)"
-}
-
 func lexBibTeX(input string) (*lexer, chan lexeme) {
 	return lex(input, lexTopLevel)
 }
@@ -138,15 +128,23 @@ func lexEntryType(l *lexer) stateFn {
 }
 
 func lexIdentifier(l *lexer) stateFn {
+	allNumeric := true
 	for {
 		switch r := l.next(); {
 		case r == eof:
 			return l.errorf("unclosed entry")
 		case isIdentifierChar(r):
 			// consume
+			if !isNumeric(r) {
+				allNumeric = false
+			}
 		default:
 			l.backup()
-			l.emit(tokenIdentifier)
+			if allNumeric {
+				l.emit(tokenNumber)
+			} else {
+				l.emit(tokenIdentifier)
+			}
 			return lexEntryBody
 		}
 	}
@@ -172,38 +170,19 @@ func lexString(l *lexer) stateFn {
 	return nil
 }
 
-func lexNumber(l *lexer) stateFn {
-	for {
-		switch r := l.next(); {
-		case r == eof:
-			return l.errorf("unclosed entry")
-		case isNumeric(r):
-			// consume
-		case r == litComma || r == litRightBrace:
-			l.backup()
-			l.emit(tokenNumber)
-			return lexEntryBody
-		default:
-			l.emit(tokenError)
-			return lexTopLevel
-		}
-	}
-	return nil
-}
-
 func lexEntryBody(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
 		case r == eof:
 			return l.errorf("unclosed entry")
-		case isWhitespace(r):
-			l.ignore()
-		case isNumeric(r):
-			l.backup()
-			return lexNumber
 		case isIdentifierChar(r):
 			l.backup()
 			return lexIdentifier
+		case isWhitespace(r):
+			l.ignore()
+		case r == litLeftBrace:
+			l.ignore()
+			return lexBracedValue
 		case r == litRightBrace:
 			l.emit(tokenRightBrace)
 			return lexTopLevel
@@ -219,6 +198,22 @@ func lexEntryBody(l *lexer) stateFn {
 			return lexTopLevel
 		}
 
+	}
+	return nil
+}
+
+func lexBracedValue(l *lexer) stateFn {
+	for {
+		switch r := l.next(); {
+		case r == eof:
+			return l.errorf("unclosed value")
+		case r == litRightBrace:
+			l.backup()
+			l.emit(tokenString)
+			l.next()
+			l.ignore()
+			return lexEntryBody
+		}
 	}
 	return nil
 }
