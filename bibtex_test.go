@@ -53,7 +53,7 @@ func TestSimpleBibTeXParsing(t *testing.T) {
 	b := NewBibTeXEntry("book", "b_id")
 	b.AddStringAttribute("title", "Wonderful story")
 
-	parsed, err := ParseBibTeX(b.PrettyPrint())
+	parsed, err := ParseBibTeXEntry(b.PrettyPrint())
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,7 +66,7 @@ func TestSimpleBibTeXParsing(t *testing.T) {
 
 func TestMoreComplexBibTeXParsing(t *testing.T) {
 	for _, doc := range []string{simpleBibTeXDocument, exampleBibTeXDocument} {
-		parsed, err := ParseBibTeX(doc)
+		parsed, err := ParseBibTeXEntry(doc)
 		if err != nil {
 			t.Error(err)
 		}
@@ -80,16 +80,47 @@ func TestMoreComplexBibTeXParsing(t *testing.T) {
 }
 
 func TestParsingMultiple(t *testing.T) {
-	b := NewBibTeXEntry("book", "b_id")
-	b.AddStringAttribute("title", "Wonderful story")
+	gibberish := " a bunch of gibberish "
+	almostMatch := "@fooo}=\n\t"
 
-	parsed, err := ParseBibTeX(b.PrettyPrint())
-	if err != nil {
-		t.Error(err)
+	cases := map[string]int{
+		simpleBibTeXDocument:                                                                  1,
+		exampleBibTeXDocument:                                                                 1,
+		exampleBibTeXDocument + gibberish + simpleBibTeXDocument:                              2,
+		simpleBibTeXDocument + gibberish + simpleBibTeXDocument:                               2,
+		exampleBibTeXDocument + almostMatch:                                                   1,
+		almostMatch + simpleBibTeXDocument + gibberish:                                        1,
+		exampleBibTeXDocument + gibberish + almostMatch + exampleBibTeXDocument + almostMatch: 2,
 	}
-	actual := parsed.PrettyPrint()
-	expected := b.PrettyPrint()
-	if actual != expected {
-		t.Errorf("'%s' != '%s'", actual, expected)
+
+	for doc, expected := range cases {
+		entries := ParseBibTeXEntries(doc)
+		if len(entries) != expected {
+			for _, result := range entries {
+				fmt.Println(result.Entry.PrettyPrint())
+			}
+			t.Error("Expected", expected, "entries, got", len(entries))
+		}
+	}
+}
+
+func TestParsingBrokenInputs(t *testing.T) {
+	brokenDocuments := []string{
+		"@article{",
+		"@article{id",
+		"@article{id,",
+		"@article{id,foo ",
+		"@article{id,foo = ",
+		"@article{id,foo = 123",
+	}
+	for i := 0; i < len(exampleBibTeXDocument); i++ {
+		brokenDocuments = append(brokenDocuments, exampleBibTeXDocument[0:i])
+	}
+
+	for _, doc := range brokenDocuments {
+		_, err := ParseBibTeXEntry(doc)
+		if err == nil {
+			t.Error("expected error but did not get one on ", doc)
+		}
 	}
 }

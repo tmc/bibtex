@@ -5,7 +5,6 @@ package bibtex
 
 import (
 	"fmt"
-	_ "log"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -68,13 +67,10 @@ func (l *lexer) emit(t tokenType) {
 
 // return the next rune in the input or eof
 func (l *lexer) next() (result rune) {
-	//fmt.Println("next()", l.input[l.pos:])
-	//fmt.Println("---------------")
 	if l.pos >= len(l.input) {
 		l.width = 0
 		return eof
 	}
-	//log.Println("got not eof.", l.input[l.pos:])
 
 	result, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
 	l.pos += l.width
@@ -103,7 +99,7 @@ func (l *lexer) acceptRun(valid string) {
 func (l *lexer) acceptRunFunc(validFn func(rune) bool) {
 	for validFn(l.next()) {
 	}
-	// once we encounter the eventually failure, backup
+	// once we encounter the eventual failure, backup
 	l.backup()
 }
 

@@ -2,7 +2,6 @@ package bibtex
 
 import (
 	"fmt"
-	"log"
 )
 
 const (
@@ -87,10 +86,10 @@ func lexTopLevel(l *lexer) stateFn {
 			l.emit(tokenEntryStart)
 			return lexEntryType
 		}
+		l.ignore() // ignore if we're outside of toplevel
 		if r == eof {
 			break
 		}
-		log.Println("tl nomatch", string(r))
 	}
 	l.emit(tokenEOF)
 	return nil
@@ -100,7 +99,6 @@ func lexEntry(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
 		case r == eof:
-			log.Println("eof", r)
 			return l.errorf("unclosed entry")
 		case isWhitespace(r):
 			l.ignore()
@@ -111,7 +109,8 @@ func lexEntry(l *lexer) stateFn {
 			l.emit(tokenLeftBrace)
 			return lexEntryBody
 		default:
-			return l.errorf("Unexpected input in entry: %s\n", r)
+			l.emit(tokenError)
+			return lexTopLevel
 		}
 	}
 	return nil
@@ -166,10 +165,15 @@ func lexString(l *lexer) stateFn {
 func lexNumber(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
+		case isNumeric(r):
+			// consume
 		case r == litComma || r == litRightBrace:
 			l.backup()
 			l.emit(tokenNumber)
 			return lexEntryBody
+		default:
+			l.emit(tokenError)
+			return lexTopLevel
 		}
 	}
 	return nil
@@ -197,7 +201,7 @@ func lexEntryBody(l *lexer) stateFn {
 			l.ignore()
 			return lexString
 		default:
-			return l.errorf("Unexpected input in entry body: %s\n", r)
+			return l.errorf("Unexpected input in entry body: %s\n", string(r))
 		}
 
 	}

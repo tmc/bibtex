@@ -11,11 +11,30 @@ type parser struct {
 	lastToken lexeme
 }
 
-func ParseBibTeX(in string) (BibTeXEntry, error) {
-	return parseBibTeX(in)
+type ParseResult struct {
+	Entry BibTeXEntry
+	Err   error
 }
 
-func parseBibTeX(in string) (BibTeXEntry, error) {
+func ParseBibTeXEntry(in string) (BibTeXEntry, error) {
+	return parseBibTeXSingle(in)
+}
+
+func ParseBibTeXEntries(in string) []ParseResult {
+	return parseBibTeXMultiple(in)
+}
+
+func parseBibTeXSingle(in string) (BibTeXEntry, error) {
+	lexer, lexemes := lexBibTeX(in)
+	p := &parser{
+		lexer:   lexer,
+		lexemes: lexemes,
+	}
+	return p.parse()
+}
+
+func parseBibTeXMultiple(in string) (results []ParseResult) {
+	results = make([]ParseResult, 0)
 
 	lexer, lexemes := lexBibTeX(in)
 	p := &parser{
@@ -23,7 +42,18 @@ func parseBibTeX(in string) (BibTeXEntry, error) {
 		lexemes: lexemes,
 	}
 
-	return p.parse()
+	for {
+		entry, err := p.parse()
+		if err == nil {
+			results = append(results, ParseResult{entry, err})
+		} else {
+			if p.lastToken.typ == tokenEOF {
+				break
+			}
+		}
+
+	}
+	return results
 }
 
 func (p *parser) parse() (b BibTeXEntry, err error) {
@@ -44,7 +74,6 @@ func (p *parser) parse() (b BibTeXEntry, err error) {
 	if err != nil {
 		return b, err
 	}
-
 	return b, err
 }
 
@@ -52,7 +81,7 @@ func (p *parser) entry_type(b BibTeXEntry) (r BibTeXEntry, err error) {
 	r = b
 	err = p.expect(tokenIdentifier)
 	r.Type = p.lastToken.val
-	return r, nil
+	return r, err
 }
 
 func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
@@ -64,7 +93,7 @@ func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
 
 	r.Identifier = p.lastToken.val
 
-	for p.lastToken.typ != tokenRightBrace && p.lastToken.typ != tokenEOF {
+	for p.lastToken.typ != tokenRightBrace && p.lastToken.typ != tokenEOF && p.lastToken.typ != tokenError {
 		p.accept(tokenComma)
 
 		t := p.nextToken()
