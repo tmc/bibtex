@@ -143,3 +143,7 @@ func isWhitespace(r rune) bool {
 func isAlphaNumeric(r rune) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
+
+func isNumeric(r rune) bool {
+	return unicode.IsDigit(r)
+}

@@ -36,6 +36,14 @@ const (
 	litQuote           = '"'
 )
 
+func (tt tokenType) String() string {
+	typeLabel, ok := tokenTypeLabels[tt]
+	if !ok {
+		typeLabel = "unknown_token"
+	}
+	return typeLabel
+}
+
 func (l lexeme) String() string {
 	switch l.typ {
 	case tokenEOF:
@@ -43,10 +51,7 @@ func (l lexeme) String() string {
 	case tokenError:
 		return fmt.Sprintf("(error: %s)", l.val)
 	}
-	typeLabel, ok := tokenTypeLabels[l.typ]
-	if !ok {
-		typeLabel = "unknown_token"
-	}
+	typeLabel := l.typ.String()
 
 	// if no label print direct value
 	if typeLabel == "" {
@@ -57,6 +62,16 @@ func (l lexeme) String() string {
 		return fmt.Sprintf("%s %.30q...", typeLabel, l.val)
 	}
 	return fmt.Sprintf("%s %q", typeLabel, l.val)
+}
+
+func (l lexeme) Value() string {
+	switch l.typ {
+	case tokenString:
+		return fmt.Sprintf("\"%s\"", l.val)
+	default:
+		return fmt.Sprint(l.val)
+	}
+	return "(unknown)"
 }
 
 func lexBibTeX(input string) (*lexer, chan lexeme) {
@@ -148,11 +163,26 @@ func lexString(l *lexer) stateFn {
 	return nil
 }
 
+func lexNumber(l *lexer) stateFn {
+	for {
+		switch r := l.next(); {
+		case r == litComma || r == litRightBrace:
+			l.backup()
+			l.emit(tokenNumber)
+			return lexEntryBody
+		}
+	}
+	return nil
+}
+
 func lexEntryBody(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
 		case isWhitespace(r):
 			l.ignore()
+		case isNumeric(r):
+			l.backup()
+			return lexNumber
 		case isAlphaNumeric(r):
 			l.backup()
 			return lexIdentifier
