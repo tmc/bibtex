@@ -11,16 +11,13 @@ type parser struct {
 	lastToken lexeme
 }
 
-type ParseResult struct {
-	Entry BibTeXEntry
-	Err   error
-}
+// @todo move to Reader
 
 func ParseBibTeXEntry(in string) (BibTeXEntry, error) {
 	return parseBibTeXSingle(in)
 }
 
-func ParseBibTeXEntries(in string) []ParseResult {
+func ParseBibTeXEntries(in string) []BibTeXEntry {
 	return parseBibTeXMultiple(in)
 }
 
@@ -33,8 +30,8 @@ func parseBibTeXSingle(in string) (BibTeXEntry, error) {
 	return p.parse()
 }
 
-func parseBibTeXMultiple(in string) (results []ParseResult) {
-	results = make([]ParseResult, 0)
+func parseBibTeXMultiple(in string) (results []BibTeXEntry) {
+	results = make([]BibTeXEntry, 0)
 
 	lexer, lexemes := lexBibTeX(in)
 	p := &parser{
@@ -45,7 +42,7 @@ func parseBibTeXMultiple(in string) (results []ParseResult) {
 	for {
 		entry, err := p.parse()
 		if err == nil {
-			results = append(results, ParseResult{entry, err})
+			results = append(results, entry)
 		} else {
 			if p.lastToken.typ == tokenEOF {
 				break
