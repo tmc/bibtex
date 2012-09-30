@@ -48,7 +48,9 @@ func (l lexeme) String() string {
 	case tokenEOF:
 		return "EOF"
 	case tokenError:
-		return fmt.Sprintf("(error: %s)", l.val)
+		return fmt.Sprintf("error: %s", l.val)
+	case tokenInvalid:
+		return "INVALID"
 	}
 	typeLabel := l.typ.String()
 
@@ -119,6 +121,8 @@ func lexEntry(l *lexer) stateFn {
 func lexEntryType(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
+		case r == eof:
+			return l.errorf("unclosed entry")
 		case isWhitespace(r):
 			l.ignore()
 		case isAlphaNumeric(r):
@@ -135,7 +139,9 @@ func lexEntryType(l *lexer) stateFn {
 func lexIdentifier(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
-		case isAlphaNumeric(r):
+		case r == eof:
+			return l.errorf("unclosed entry")
+		case isIdentifierChar(r):
 			// consume
 		default:
 			l.backup()
@@ -149,6 +155,8 @@ func lexIdentifier(l *lexer) stateFn {
 func lexString(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
+		case r == eof:
+			return l.errorf("unclosed string")
 		case r == litQuote:
 			l.backup()
 			l.emit(tokenString)
@@ -156,7 +164,8 @@ func lexString(l *lexer) stateFn {
 			l.ignore()
 			return lexEntryBody
 		case r == eof:
-			return l.errorf("Unexpected EOF")
+			l.backup()
+			return lexTopLevel
 		}
 	}
 	return nil
@@ -165,6 +174,8 @@ func lexString(l *lexer) stateFn {
 func lexNumber(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
+		case r == eof:
+			return l.errorf("unclosed entry")
 		case isNumeric(r):
 			// consume
 		case r == litComma || r == litRightBrace:
@@ -182,12 +193,14 @@ func lexNumber(l *lexer) stateFn {
 func lexEntryBody(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
+		case r == eof:
+			return l.errorf("unclosed entry")
 		case isWhitespace(r):
 			l.ignore()
 		case isNumeric(r):
 			l.backup()
 			return lexNumber
-		case isAlphaNumeric(r):
+		case isIdentifierChar(r):
 			l.backup()
 			return lexIdentifier
 		case r == litRightBrace:
@@ -201,9 +214,15 @@ func lexEntryBody(l *lexer) stateFn {
 			l.ignore()
 			return lexString
 		default:
-			return l.errorf("Unexpected input in entry body: %s\n", string(r))
+			l.emit(tokenError)
+			return lexTopLevel
 		}
 
 	}
 	return nil
+}
+
+func isIdentifierChar(r rune) bool {
+	badChars := " \\\t{}\"@,=%#\n\r~"
+	return strings.IndexRune(badChars, r) == -1
 }

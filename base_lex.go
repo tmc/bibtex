@@ -13,7 +13,8 @@ import (
 type tokenType int
 
 const (
-	tokenError tokenType = iota
+	tokenInvalid tokenType = iota
+	tokenError
 	tokenEOF
 	maxBuiltinToken
 )
