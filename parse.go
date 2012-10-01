@@ -82,6 +82,7 @@ func (p *parser) entry_body(b BibTeXEntry) (r BibTeXEntry, err error) {
 		return r, err
 	}
 	r.Identifier = p.lastToken.val
+	p.accept(tokenComma)
 
 	return p.value_list(r)
 }
